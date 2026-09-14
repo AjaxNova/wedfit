@@ -1,0 +1,35 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Node dependencies
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor & OS files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Backup & scratch JSX files
+wedhub-copy.jsx
+wedhub-copy1.jsx
+wedhub-sep14.jsx
+wedhub-with enquiryv1.jsx
+wedhub-*.jsx
+
+# Redundant root assets (active assets are in public/assets/wedfit)
+/assets
