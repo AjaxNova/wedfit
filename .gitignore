@@ -33,3 +33,9 @@ wedhub-*.jsx
 
 # Redundant root assets (active assets are in public/assets/wedfit)
 /assets
+
+# Secrets and upload scripts with credentials
+.env
+.env.*
+scripts/upload-assets.js
+

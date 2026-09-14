@@ -45,6 +45,7 @@ import {
   ChevronLeft, ChevronRight, ArrowRight,
   MapPin, Phone, Menu, X, Sun, Moon, Calendar,
 } from "lucide-react";
+import CDN_MAP from "./scripts/cloudinary-map.json";
 
 function Instagram({ size = 24, strokeWidth = 2, className, ...props }) {
   return (
@@ -96,11 +97,27 @@ const ENQUIRY_WHATSAPP_NUMBER = "919567832715";
 const ENQUIRY_STUDIO_NAME = "Malabar Darbar";
 
 /* ============================================================================
- * assets — local paths, see wiring note above
+ * assets — Cloudinary CDN map + auto-optimization
  * ============================================================================ */
-const ASSETS = "/assets/wedfit";
-const VIDEOS = "/videos";
-const LOGO_SRC = `${ASSETS}/logo/website_logo.png`;
+const ASSETS = CDN_MAP;
+const CDN_TRANSFORM = "f_auto,q_auto"; // auto-format + auto-quality, then cached at the CDN edge
+
+const cdnImage = (localPath) => {
+  const url = CDN_MAP.images[localPath];
+  if (!url) return localPath; // graceful fallback
+  return url.replace("/upload/", `/upload/${CDN_TRANSFORM}/`);
+};
+const cdnVideo = (localPath) => {
+  const url = CDN_MAP.videos[localPath];
+  if (!url) return localPath;
+  const isVertical = localPath.includes("vertical");
+  const transform = isVertical
+    ? "q_auto:eco,w_540,c_limit"
+    : "q_auto:eco,w_1280,c_limit";
+  return url.replace("/video/upload/", `/video/upload/${transform}/`);
+};
+
+const LOGO_SRC = cdnImage("/assets/wedfit/logo/website_logo.png");
 /* NOTE: this q=... form resolves to the studio pin as long as the business name stays indexed on Google.
  * For production, prefer Google Maps → Share → "Embed a map" → copy the long src= (it contains the place ID)
  * and paste it here verbatim instead. */
@@ -120,21 +137,25 @@ const COLLECTION_CATEGORIES = [
 const SOLO_EXT = { 1: "jpg", 2: "jpg", 3: "jpg", 4: "jpg", 5: "jpg", 6: "webp", 7: "webp", 8: "webp", 9: "jpg" };
 const SOLO_ITEMS = Object.keys(SOLO_EXT).map((n) => ({
   id: `solo${n}`,
-  a: `${ASSETS}/solo/solo${n}-a.${SOLO_EXT[n]}`,
-  b: `${ASSETS}/solo/solo${n}-b.${SOLO_EXT[n]}`,
+  a: cdnImage(`/assets/wedfit/solo/solo${n}-a.${SOLO_EXT[n]}`),
+  b: cdnImage(`/assets/wedfit/solo/solo${n}-b.${SOLO_EXT[n]}`),
 }));
 
 // family1 – family8, all jpg
 const FAMILY_ITEMS = Array.from({ length: 8 }, (_, i) => {
   const n = i + 1;
-  return { id: `family${n}`, a: `${ASSETS}/family/family${n}-a.jpg`, b: `${ASSETS}/family/family${n}-b.jpg` };
+  return {
+    id: `family${n}`,
+    a: cdnImage(`/assets/wedfit/family/family${n}-a.jpg`),
+    b: cdnImage(`/assets/wedfit/family/family${n}-b.jpg`),
+  };
 });
 
 // groomsmen1 – groomsmen8, mixed jpg/webp, single shot each
 const GROOMSMEN_EXT = { 1: "jpg", 2: "webp", 3: "webp", 4: "webp", 5: "webp", 6: "jpg", 7: "webp", 8: "jpg" };
 const GROOMSMEN_ITEMS = Object.keys(GROOMSMEN_EXT).map((n) => ({
   id: `groomsmen${n}`,
-  src: `${ASSETS}/groomsmen/groomsmen${n}.${GROOMSMEN_EXT[n]}`,
+  src: cdnImage(`/assets/wedfit/groomsmen/groomsmen${n}.${GROOMSMEN_EXT[n]}`),
 }));
 
 /* ============================================================================
@@ -289,7 +310,7 @@ function NavBar({ theme, onToggleTheme }) {
   return (
     <nav className={`md-nav ${scrolled ? "md-nav--solid" : "md-nav--ghost"}`} aria-label="Primary">
       <button className="md-nav__brand" onClick={() => goTo("#home")} aria-label="Malabar Darbar, home">
-        <img src={LOGO_SRC} alt="Malabar Darbar" className="md-nav__logo" />
+        <img src={LOGO_SRC} alt="Malabar Darbar" className="md-nav__logo" loading="eager" fetchpriority="high" decoding="async" />
       </button>
 
       <div className="md-nav__links" role="none">
@@ -337,35 +358,81 @@ function NavBar({ theme, onToggleTheme }) {
  * ============================================================================ */
 function Hero() {
   const portrait = useOrientation();
-  const videoSrc = portrait ? `${VIDEOS}/vertical.mp4` : `${VIDEOS}/landscape.mp4`;
-  const [loaded, setLoaded] = useState(false);
-  useEffect(() => {
-    const t = requestAnimationFrame(() => requestAnimationFrame(() => setLoaded(true)));
-    return () => cancelAnimationFrame(t);
+  const videoSrc = cdnVideo(portrait ? "/videos/vertical.mp4" : "/videos/landscape.mp4");
+  const posterSrc = portrait
+    ? cdnImage("/assets/wedfit/videos/vertical-poster.jpg")
+    : cdnImage("/assets/wedfit/videos/landscape-poster.jpg");
+
+  const videoRef = useRef(null);
+  const [videoFailed, setVideoFailed] = useState(false);
+
+  // Synchronously set muted and inline attributes on element attach to satisfy Safari autoplay heuristics before initial paint
+  const setVideoRef = useCallback((el) => {
+    if (el) {
+      el.defaultMuted = true;
+      el.muted = true;
+      el.playsInline = true;
+      el.setAttribute("muted", "");
+      el.setAttribute("playsinline", "");
+      el.setAttribute("webkit-playsinline", "true");
+      const p = el.play();
+      if (p !== undefined) {
+        p.catch(() => {});
+      }
+    }
+    videoRef.current = el;
   }, []);
+
+  const playVideo = useCallback(() => {
+    const v = videoRef.current;
+    if (v) {
+      v.defaultMuted = true;
+      v.muted = true;
+      const playPromise = v.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {});
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    setVideoFailed(false);
+    playVideo();
+  }, [videoSrc, playVideo]);
 
   const scrollTo = (id) => (e) => { e.preventDefault(); document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }); };
 
   return (
     <header className="md-hero" id="home">
       <div className="md-hero__video-wrap">
-        <video
-          key={videoSrc}
-          className="md-hero__video"
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="auto"
-          disablePictureInPicture
-          disableRemotePlayback
-        >
-          <source src={videoSrc} type="video/mp4" />
-        </video>
+        {!videoFailed ? (
+          <video
+            ref={setVideoRef}
+            key={videoSrc}
+            src={videoSrc}
+            className="md-hero__video"
+            autoPlay
+            muted
+            defaultMuted
+            loop
+            playsInline
+            webkit-playsinline="true"
+            preload="auto"
+            fetchpriority="high"
+            poster={posterSrc}
+            disablePictureInPicture
+            disableRemotePlayback
+            onLoadedData={playVideo}
+            onCanPlay={playVideo}
+            onError={() => setVideoFailed(true)}
+          />
+        ) : (
+          <img src={posterSrc} alt="" className="md-hero__video" fetchpriority="high" decoding="async" />
+        )}
         <div className="md-hero__vignette" aria-hidden="true" />
       </div>
 
-      <div className={`md-hero__content ${loaded ? "md-hero__content--in" : ""}`}>
+      <div className="md-hero__content">
         <h1 className="md-hero__title" style={{ "--i": 0 }}>
           Suits, sherwanis,<br />sorted.
         </h1>
@@ -406,8 +473,8 @@ function PhotoCard({
 
   const cardContent = (extraClass = "") => (
     <div className={`md-photo__frame ${extraClass}`}>
-      <img src={a} alt={label || "Malabar Darbar outfit"} className={`md-photo__img md-photo__img--a ${flip ? "md-photo__img--out" : ""}`} loading="lazy" />
-      <img src={b} alt="" aria-hidden="true" className={`md-photo__img md-photo__img--b ${flip ? "md-photo__img--in" : ""}`} loading="lazy" />
+      <img src={a} alt={label || "Malabar Darbar outfit"} className={`md-photo__img md-photo__img--a ${flip ? "md-photo__img--out" : ""}`} loading="lazy" decoding="async" />
+      <img src={b} alt="" aria-hidden="true" className={`md-photo__img md-photo__img--b ${flip ? "md-photo__img--in" : ""}`} loading="lazy" decoding="async" />
       <button
         type="button"
         className="md-photo__enquire"
@@ -480,6 +547,7 @@ function GlowingCollectionCard({ id, a, b, label, index = 0, onEnquire }) {
             alt={label || "Malabar Darbar outfit"}
             className={`md-photo__img md-photo__img--a ${flip ? "md-photo__img--out" : ""}`}
             loading="lazy"
+            decoding="async"
           />
           <img
             src={b}
@@ -487,6 +555,7 @@ function GlowingCollectionCard({ id, a, b, label, index = 0, onEnquire }) {
             aria-hidden="true"
             className={`md-photo__img md-photo__img--b ${flip ? "md-photo__img--in" : ""}`}
             loading="lazy"
+            decoding="async"
           />
           <button
             type="button"
@@ -576,7 +645,7 @@ function GroomsmenProductCard({ product, translate, index, onEnquire }) {
           })
         }
       >
-        <img src={product.thumbnail} alt={product.title} loading="lazy" />
+        <img src={product.thumbnail} alt={product.title} loading="lazy" decoding="async" />
         <div className="md-gm-hero-card__overlay" />
         <div className="md-gm-hero-card__caption">
           <span>{String(index + 1).padStart(2, "0")}</span>
@@ -620,7 +689,7 @@ function GroomsmenHeroParallax({ products, onEnquire }) {
     springConfig
   );
   const translateY = useSpring(
-    useTransform(scrollYProgress, [0, 0.22], [80, 360]),
+    useTransform(scrollYProgress, [0, 0.22], [-40, 40]),
     springConfig
   );
 
@@ -962,8 +1031,8 @@ function EnquiryModal({ item, onClose }) {
 
         <div className="md-enquiry-context">
           <div className={`md-enquiry-context__frame ${item.imageB ? "md-enquiry-context__frame--has-b" : ""}`} style={{ aspectRatio: item.aspect }}>
-            <img src={item.imageA || item.image} alt={item.label} className="md-enquiry-context__img md-enquiry-context__img--a" />
-            {item.imageB && <img src={item.imageB} alt="" aria-hidden="true" className="md-enquiry-context__img md-enquiry-context__img--b" />}
+            <img src={item.imageA || item.image} alt={item.label} className="md-enquiry-context__img md-enquiry-context__img--a" loading="lazy" decoding="async" />
+            {item.imageB && <img src={item.imageB} alt="" aria-hidden="true" className="md-enquiry-context__img md-enquiry-context__img--b" loading="lazy" decoding="async" />}
             {item.imageB && <span className="md-enquiry-context__hover-label" aria-hidden="true">Hover to view the second look</span>}
           </div>
           <p className="md-enquiry-context__caption">{item.label}</p>
@@ -1073,14 +1142,6 @@ function EnquiryModal({ item, onClose }) {
  * App.jsx
  * ============================================================================ */
 export default function App() {
-  useEffect(() => {
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,500&family=Archivo:wght@400;500;600;700&display=swap";
-    document.head.appendChild(link);
-    return () => document.head.removeChild(link);
-  }, []);
-
   const [theme, setTheme] = useState("dark");
   const [selectedItem, setSelectedItem] = useState(null);
 
@@ -1216,16 +1277,26 @@ const STYLES = `
   .md-hero{ position:relative; margin:0; min-height:100vh; min-height:100svh; display:flex; align-items:flex-end; overflow:hidden; }
   .md-hero__video-wrap{ position:absolute; inset:0; z-index:0; margin:0; padding:0; background:#000; overflow:hidden; }
   .md-hero__video{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center; display:block; }
+  .md-hero__video::-webkit-media-controls-start-playback-button,
+  .md-hero__video::-webkit-media-controls-play-button,
+  .md-hero__video::-webkit-media-controls{
+    display:none !important;
+    -webkit-appearance:none;
+    opacity:0 !important;
+    pointer-events:none !important;
+  }
   .md-hero__vignette{ position:absolute; inset:0; pointer-events:none;
     background:linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.05) 22%, rgba(0,0,0,0.1) 62%, rgba(0,0,0,0.8) 100%);
     box-shadow: inset 0 0 160px 50px rgba(0,0,0,0.7);
   }
   .md-hero__content{ position:relative; z-index:2; padding:0 clamp(20px,6vw,80px) 96px; max-width:760px; color:#F8ECEA; }
-  .md-hero__content > *{ opacity:0; transform:translateY(16px) scale(0.985); filter:blur(5px);
-    transition:opacity 0.85s cubic-bezier(.2,.7,.3,1), transform 0.85s cubic-bezier(.2,.7,.3,1), filter 0.85s cubic-bezier(.2,.7,.3,1);
-    transition-delay:calc(260ms + var(--i) * 130ms); }
-  .md-hero__content--in > *{ opacity:1; transform:translateY(0) scale(1); filter:blur(0); }
-  .md-hero__title{ font-family:'Cormorant Garamond', serif; font-size:clamp(44px,7.4vw,92px); line-height:1.02; letter-spacing:-0.01em; font-weight:600; margin:0; text-shadow:0 6px 30px rgba(0,0,0,0.55); }
+  .md-hero__content > *{ opacity:0; transform:translateY(10px);
+    animation: heroFadeIn 0.8s cubic-bezier(.2,.7,.3,1) forwards;
+    animation-delay:calc(60ms + var(--i) * 120ms); }
+  @keyframes heroFadeIn {
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .md-hero__title{ font-family:'Cormorant Garamond', Georgia, serif; font-size:clamp(44px,7.4vw,92px); line-height:1.02; letter-spacing:-0.01em; font-weight:600; margin:0; text-shadow:0 6px 30px rgba(0,0,0,0.55); font-optical-sizing:auto; }
   .md-hero__sub{ font-size:18px; line-height:1.6; opacity:0.85; margin:26px 0 36px; max-width:46ch; text-shadow:0 2px 14px rgba(0,0,0,0.5); }
   .md-hero__actions{ display:flex; align-items:center; gap:24px; flex-wrap:wrap; }
   .md-hero__link{ font-size:14.5px; color:#F8ECEA; text-decoration:none; border-bottom:1px solid var(--gold-bright); padding-bottom:2px; opacity:0.9; }
@@ -1344,8 +1415,8 @@ const STYLES = `
      adapted only in typography, color and card treatment for Malabar Darbar. */
   .md-gm-hero-parallax{
     position:relative;
-    min-height:300vh;
-    padding:48px 0 120px;
+    min-height:190vh;
+    padding:32px 0 40px;
     overflow:hidden;
     will-change:transform;
     background:
@@ -1369,7 +1440,7 @@ const STYLES = `
     z-index:4;
     width:min(1180px,calc(100% - 40px));
     margin:0 auto;
-    padding:10px 0 48px;
+    padding:0 0 20px;
     display:flex;
     justify-content:space-between;
     align-items:flex-end;
@@ -1427,8 +1498,8 @@ const STYLES = `
   .md-gm-hero-row{
     display:flex;
     flex-direction:row;
-    gap:32px;
-    margin-bottom:32px;
+    gap:22px;
+    margin-bottom:22px;
     width:max-content;
     padding-left:max(20px,calc((100vw - 1180px)/2));
     will-change:transform;
@@ -1512,8 +1583,8 @@ const STYLES = `
     letter-spacing:-.01em;
   }
   @media (max-width:760px){
-    .md-gm-hero-parallax{ min-height:245vh; padding-top:44px; }
-    .md-gm-hero-header{ width:calc(100% - 32px); padding-bottom:42px; }
+    .md-gm-hero-parallax{ min-height:165vh; padding:24px 0 24px; }
+    .md-gm-hero-header{ width:calc(100% - 32px); padding-bottom:18px; }
     .md-gm-hero-mark{ display:none; }
     .md-gm-hero-title{ font-size:clamp(44px,12vw,62px); }
     .md-gm-hero-row{ gap:12px; margin-bottom:12px; padding-left:16px; }
