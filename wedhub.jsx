@@ -406,7 +406,7 @@ function Hero() {
       el.setAttribute("webkit-playsinline", "true");
       const p = el.play();
       if (p !== undefined) {
-        p.catch(() => { });
+        p.catch(() => {});
       }
     }
     videoRef.current = el;
@@ -419,7 +419,7 @@ function Hero() {
       v.muted = true;
       const playPromise = v.play();
       if (playPromise !== undefined) {
-        playPromise.catch(() => { });
+        playPromise.catch(() => {});
       }
     }
   }, []);
@@ -1234,7 +1234,7 @@ const STYLES = `
     background:var(--bg); color:var(--ink);
     font-family:'Archivo', -apple-system, sans-serif;
     font-size:16px; line-height:1.6;
-    min-height:100vh; overflow-x:hidden; position:relative;
+    min-height:100vh; overflow-x:clip; position:relative;
     transition:background 0.35s ease, color 0.35s ease;
   }
   .md-app[data-theme="light"]{
