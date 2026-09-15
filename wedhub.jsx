@@ -973,16 +973,16 @@ function EnquiryModal({ item, onClose }) {
     const startLabel = new Date(`${date}T00:00:00`).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
     const endLabel = new Date(`${endDate}T00:00:00`).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
     const days = Math.round((new Date(`${endDate}T00:00:00`) - new Date(`${date}T00:00:00`)) / 86400000) + 1;
-    const imageUrl = item.imageA?.startsWith("/") ? `${window.location.origin}${item.imageA}` : item.imageA;
-    // Use Unicode escapes for emoji so the source encoding can never turn them into �
-    // before WhatsApp receives the URL-encoded message.
+
+    const leafId = item.imageA?.split("/").pop()?.replace(/\.[a-zA-Z0-9]+$/, "") || "";
+    const shellUrl = leafId ? `https://ajaxnova.github.io/wedfit/look/${leafId}/` : "";
+
     const WA = {
       wave: "\u{1F44B}",
       calendar: "\u{1F4C5}",
       clock: "\u{23F1}\u{FE0F}",
       person: "\u{1F464}",
       pin: "\u{1F4CD}",
-      image: "\u{1F5BC}\u{FE0F}",
       thanks: "\u{1F64F}"
     };
 
@@ -1005,11 +1005,12 @@ function EnquiryModal({ item, onClose }) {
       ``,
       `*NOTE*`,
       `${notes.trim() || "No additional note"}`,
-      ...(imageUrl ? [``, `${WA.image} *LOOK REFERENCE*`, imageUrl] : []),
+      ...(shellUrl ? [``, `🔗 ${shellUrl}`] : []),
       ``,
       `Please confirm availability and fitting details.`,
       `Thank you ${WA.thanks}`
     ];
+
     const text = encodeURIComponent(lines.join("\n"));
     window.open(`https://wa.me/${ENQUIRY_WHATSAPP_NUMBER}?text=${text}`, "_blank", "noopener,noreferrer");
     resetForm();
