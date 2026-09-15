@@ -94,7 +94,7 @@ const STUDIO = {
 
 /* WhatsApp number used by the EnquiryModal (separate from the display number above). */
 const ENQUIRY_WHATSAPP_NUMBER = "919567832715";
-const ENQUIRY_STUDIO_NAME = "Malabar Darbar";
+const ENQUIRY_STUDIO_NAME = "Wedfit";
 
 /* ============================================================================
  * assets — Cloudinary CDN map + auto-optimization
@@ -309,8 +309,8 @@ function NavBar({ theme, onToggleTheme }) {
 
   return (
     <nav className={`md-nav ${scrolled ? "md-nav--solid" : "md-nav--ghost"}`} aria-label="Primary">
-      <button className="md-nav__brand" onClick={() => goTo("#home")} aria-label="Malabar Darbar, home">
-        <img src={LOGO_SRC} alt="Malabar Darbar" className="md-nav__logo" loading="eager" fetchpriority="high" decoding="async" />
+      <button className="md-nav__brand" onClick={() => goTo("#home")} aria-label="Wedfit, home">
+        <img src={LOGO_SRC} alt="Wedfit" className="md-nav__logo" loading="eager" fetchpriority="high" decoding="async" />
       </button>
 
       <div className="md-nav__links" role="none">
@@ -326,7 +326,7 @@ function NavBar({ theme, onToggleTheme }) {
         <a className="md-nav__icon" href={STUDIO.whatsappHref} target="_blank" rel="noopener noreferrer" aria-label="Chat on WhatsApp">
           <WhatsApp size={16} />
         </a>
-        <a className="md-nav__icon" href={STUDIO.instagramHref} target="_blank" rel="noopener noreferrer" aria-label="Malabar Darbar on Instagram">
+        <a className="md-nav__icon" href={STUDIO.instagramHref} target="_blank" rel="noopener noreferrer" aria-label="Wedfit on Instagram">
           <Instagram size={16} strokeWidth={1.8} />
         </a>
       </div>
@@ -473,7 +473,7 @@ function PhotoCard({
 
   const cardContent = (extraClass = "") => (
     <div className={`md-photo__frame ${extraClass}`}>
-      <img src={a} alt={label || "Malabar Darbar outfit"} className={`md-photo__img md-photo__img--a ${flip ? "md-photo__img--out" : ""}`} loading="lazy" decoding="async" />
+      <img src={a} alt={label || "Wedfit outfit"} className={`md-photo__img md-photo__img--a ${flip ? "md-photo__img--out" : ""}`} loading="lazy" decoding="async" />
       <img src={b} alt="" aria-hidden="true" className={`md-photo__img md-photo__img--b ${flip ? "md-photo__img--in" : ""}`} loading="lazy" decoding="async" />
       <button
         type="button"
@@ -544,7 +544,7 @@ function GlowingCollectionCard({ id, a, b, label, index = 0, onEnquire }) {
         <div className="md-photo__frame">
           <img
             src={a}
-            alt={label || "Malabar Darbar outfit"}
+            alt={label || "Wedfit outfit"}
             className={`md-photo__img md-photo__img--a ${flip ? "md-photo__img--out" : ""}`}
             loading="lazy"
             decoding="async"
@@ -978,7 +978,7 @@ function EnquiryModal({ item, onClose }) {
     const shellUrl = leafId ? `https://ajaxnova.github.io/wedfit/look/${leafId}/` : "";
 
     const lines = [
-      `*MALABAR DARBAR* 👋`,
+      `*WEDFIT* 👋`,
       `Wedding Attire Enquiry`,
       ``,
       `*LOOK*`,
@@ -1153,7 +1153,7 @@ export default function App() {
       <EnquiryModal item={selectedItem} onClose={() => setSelectedItem(null)} />
 
       <footer className="md-footer">
-        <span>MALABAR DARBAR · Wedding attire rental, Kozhikode</span>
+        <span>WEDFIT · Wedding attire rental, Kozhikode</span>
         <div className="md-footer__links">
           <a href={STUDIO.instagramHref} target="_blank" rel="noopener noreferrer">Instagram</a>
           <a href={STUDIO.whatsappHref} target="_blank" rel="noopener noreferrer">WhatsApp</a>
