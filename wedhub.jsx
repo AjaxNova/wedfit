@@ -668,7 +668,7 @@ function CollectionSection({ onEnquire }) {
 function GroomsmenCard({ product, index, onEnquire }) {
   return (
     <motion.div
-      whileHover={{ y: -10 }}
+      whileHover={{ y: -6 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
       className="md-gm-card"
     >
@@ -743,7 +743,7 @@ function GroomsmenStack({ products, onEnquire, animated }) {
 }
 
 /* Desktop & Mobile pinned 2-row runway scroll carousel. Pinning is done with `position: sticky`
- * inside a tall wrapper while 2 rows of 4 cards translate horizontally in counter-directions. */
+ * inside a wrapper while 2 rows of 4 cards translate horizontally in counter-directions. */
 function GroomsmenPinnedTrack({ products, onEnquire }) {
   const wrapRef = useRef(null);
   const row1Ref = useRef(null);
@@ -757,7 +757,7 @@ function GroomsmenPinnedTrack({ products, onEnquire }) {
     const wrap = wrapRef.current;
     if (!row || !wrap) return;
     const measure = () => {
-      const dist = Math.max(0, row.scrollWidth - wrap.offsetWidth + 60);
+      const dist = Math.max(0, row.scrollWidth - wrap.offsetWidth + 48);
       setScrollDistance(dist);
     };
     measure();
@@ -775,13 +775,15 @@ function GroomsmenPinnedTrack({ products, onEnquire }) {
   const x1 = useTransform(progress, [0, 1], [0, -scrollDistance]);
   const x2 = useTransform(progress, [0, 1], [-scrollDistance, 0]);
 
+  const extraScroll = scrollDistance > 0 ? Math.round(scrollDistance * 1.15) : 360;
+
   return (
     <section
       ref={wrapRef}
       className="md-gm-carousel"
       id="groomsmen"
       aria-labelledby="groomsmen-heading"
-      style={{ height: `calc(100vh + ${Math.max(scrollDistance * 1.3, 750)}px)` }}
+      style={{ height: `calc(100vh + ${Math.max(extraScroll, 320)}px)` }}
     >
       <div className="md-gm-carousel__sticky">
         <GroomsmenHeader />
@@ -1464,9 +1466,7 @@ const STYLES = `
 
   .md-photo__caption{ margin-top:10px; font-size:12.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--ink); opacity:0.55; font-weight:600; }
 
-  /* Groomsmen — scroll carousel. Desktop pins via position:sticky (no
-     scroll-jacking library) while an 8-card track translates horizontally;
-     mobile/tablet and prefers-reduced-motion get a plain vertical stack. */
+  /* Groomsmen — 2-Row Pinned Scroll Runway Carousel */
   .md-gm-carousel{
     position:relative;
     background:
@@ -1486,28 +1486,28 @@ const STYLES = `
   .md-gm-hero-header{
     position:relative;
     z-index:4;
-    width:min(1180px,calc(100% - 40px));
+    width:min(1180px,calc(100% - 48px));
     margin:0 auto;
-    padding:0 0 20px;
+    padding:0 0 clamp(4px, 1.2vh, 12px);
     display:flex;
     justify-content:space-between;
     align-items:flex-end;
-    gap:40px;
+    gap:32px;
   }
   .md-gm-hero-title{
-    max-width:10ch;
+    max-width:14ch;
     color:var(--ink);
     font-family:'Cormorant Garamond',Georgia,serif;
-    font-size:clamp(46px,6.2vw,82px);
+    font-size:clamp(34px,3.8vw,56px);
     font-weight:600;
-    line-height:.9;
+    line-height:0.96;
     letter-spacing:-.025em;
   }
   .md-gm-hero-note{
-    max-width:38ch;
-    margin:20px 0 0;
-    font-size:15px;
-    line-height:1.7;
+    max-width:44ch;
+    margin:clamp(4px, 0.8vh, 10px) 0 0;
+    font-size:clamp(13px, 1.05vw, 15px);
+    line-height:1.45;
     color:var(--ink);
     opacity:.6;
   }
@@ -1515,18 +1515,18 @@ const STYLES = `
     display:flex;
     flex-direction:column;
     align-items:flex-end;
-    gap:10px;
+    gap:6px;
     color:var(--gold-deep);
     white-space:nowrap;
   }
   .md-gm-hero-mark span{
     font-family:'Cormorant Garamond',Georgia,serif;
-    font-size:58px;
-    line-height:.7;
+    font-size:clamp(36px, 3.2vw, 48px);
+    line-height:.75;
     letter-spacing:-.05em;
   }
-  .md-gm-hero-mark i{ width:46px; height:1px; background:var(--gold-bright); }
-  .md-gm-hero-mark small{ font-size:10px; font-weight:800; letter-spacing:.16em; }
+  .md-gm-hero-mark i{ width:40px; height:1px; background:var(--gold-bright); }
+  .md-gm-hero-mark small{ font-size:9.5px; font-weight:800; letter-spacing:.16em; }
 
   /* --- 2-Row Pinned Scroll Runway Carousel --- */
   .md-gm-carousel__sticky{
@@ -1537,8 +1537,8 @@ const STYLES = `
     display:flex;
     flex-direction:column;
     justify-content:center;
-    gap:18px;
-    padding:20px 0;
+    gap:clamp(8px, 1.5vh, 16px);
+    padding:clamp(12px, 2.5vh, 28px) 0;
     overflow:hidden;
     box-sizing:border-box;
   }
@@ -1547,27 +1547,27 @@ const STYLES = `
     z-index:2;
     display:flex;
     flex-direction:column;
-    gap:16px;
+    gap:clamp(8px, 1.4vh, 14px);
     width:100%;
     overflow:visible;
   }
   .md-gm-carousel__track{
     display:flex;
     flex-direction:row;
-    gap:18px;
+    gap:clamp(12px, 1.4vw, 18px);
     width:max-content;
-    padding-left:max(20px, calc((100vw - 1180px)/2));
-    padding-right:max(20px, calc((100vw - 1180px)/2));
+    padding-left:max(24px, calc((100vw - 1180px)/2));
+    padding-right:max(24px, calc((100vw - 1180px)/2));
     will-change:transform;
   }
   .md-gm-carousel__track--rev{
-    padding-left:max(20px, calc((100vw - 1180px)/2));
+    padding-left:max(24px, calc((100vw - 1180px)/2));
   }
   .md-gm-carousel__progress{
     position:relative;
     z-index:4;
-    width:min(1180px, calc(100% - 40px));
-    margin:6px auto 0;
+    width:min(1180px, calc(100% - 48px));
+    margin:clamp(4px, 1vh, 8px) auto 0;
     height:2px;
     background:var(--line);
     overflow:hidden;
@@ -1583,9 +1583,9 @@ const STYLES = `
   /* --- Card Sizing for 2 Rows --- */
   .md-gm-card{
     position:relative;
-    width:clamp(280px, 30vw, 400px);
-    height:clamp(165px, 18vw, 235px);
-    flex:0 0 clamp(280px, 30vw, 400px);
+    width:clamp(230px, 22vw, 340px);
+    height:clamp(135px, 13.5vw, 195px);
+    flex:0 0 clamp(230px, 22vw, 340px);
     will-change:transform;
   }
   .md-gm-card__link{
@@ -1598,7 +1598,7 @@ const STYLES = `
     text-decoration:none;
     background:var(--bg-raised);
     border:1px solid var(--line);
-    box-shadow:0 16px 36px -18px rgba(74,19,26,.45);
+    box-shadow:0 12px 28px -14px rgba(74,19,26,.45);
   }
   /* button.md-gm-card__link UA-style reset, since the card is a <button> */
   button.md-gm-card__link{ font:inherit; padding:0; margin:0; color:inherit; text-align:left; -webkit-appearance:none; appearance:none; cursor:pointer; }
@@ -1621,55 +1621,92 @@ const STYLES = `
     transform:scale(1.005);
     transition:transform .8s cubic-bezier(.2,.7,.3,1),filter .6s ease;
   }
-  .md-gm-card:hover img{ transform:scale(1.075); filter:saturate(1.08) contrast(1.03); }
+  .md-gm-card:hover img{ transform:scale(1.06); filter:saturate(1.08) contrast(1.03); }
   .md-gm-card__overlay{
     position:absolute;
     z-index:1;
     inset:0;
     pointer-events:none;
-    background:linear-gradient(180deg,rgba(10,7,6,.02) 38%,rgba(10,7,6,.78) 100%);
+    background:linear-gradient(180deg,rgba(10,7,6,.02) 40%,rgba(10,7,6,.82) 100%);
   }
   .md-gm-card__caption{
     position:absolute;
     z-index:3;
-    left:16px;
-    right:16px;
-    bottom:14px;
+    left:14px;
+    right:14px;
+    bottom:10px;
     display:flex;
     align-items:flex-end;
     justify-content:space-between;
-    gap:12px;
+    gap:10px;
     color:#F8ECEA;
   }
   .md-gm-card__caption span{
-    font:700 9.5px/1 'Archivo',sans-serif;
+    font:700 9px/1 'Archivo',sans-serif;
     letter-spacing:.15em;
-    opacity:.65;
+    opacity:.7;
+    flex-shrink:0;
   }
   .md-gm-card__caption strong{
-    font:600 20px/1 'Cormorant Garamond',Georgia,serif;
+    font:600 clamp(14.5px, 1.2vw, 17.5px)/1 'Cormorant Garamond',Georgia,serif;
     letter-spacing:-.01em;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
   }
 
+  /* --- Fallback stack for reduced motion --- */
+  .md-gm-carousel--stack{ padding:56px clamp(20px,6vw,80px); }
+  .md-gm-carousel__stack{
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:18px;
+    max-width:1180px;
+    margin:24px auto 0;
+  }
+  .md-gm-carousel--stack .md-gm-card{ width:100%; height:auto; aspect-ratio:16/10; flex:none; }
+
   /* --- Mobile / Small Screens --- */
-  @media (max-width:760px){
-    .md-gm-carousel__sticky{ gap:12px; padding:14px 0; }
-    .md-gm-hero-header{ width:calc(100% - 32px); padding-bottom:8px; }
+  @media (max-width:768px){
+    .md-gm-carousel__sticky{
+      gap:14px;
+      padding-top:max(68px, 8vh);
+      padding-bottom:max(20px, 3vh);
+      justify-content:center;
+    }
+    .md-gm-hero-header{
+      width:calc(100% - 32px);
+      padding-bottom:0;
+      flex-direction:column;
+      align-items:flex-start;
+      gap:6px;
+    }
     .md-gm-hero-mark{ display:none; }
-    .md-gm-hero-title{ font-size:clamp(30px, 8vw, 42px); }
-    .md-gm-hero-note{ font-size:12.5px; line-height:1.4; }
-    .md-gm-carousel__stage{ gap:10px; }
+    .md-gm-hero-title{
+      font-size:clamp(26px, 7.5vw, 34px);
+      line-height:1.02;
+      max-width:100%;
+    }
+    .md-gm-hero-note{
+      font-size:12.5px;
+      line-height:1.4;
+      margin:2px 0 0;
+      max-width:100%;
+    }
+    .md-gm-carousel__stage{ gap:12px; }
     .md-gm-carousel__track{ gap:12px; padding-left:16px; padding-right:16px; }
     .md-gm-carousel__track--rev{ padding-left:16px; padding-right:16px; }
     .md-gm-card{
-      width:clamp(190px, 54vw, 250px);
-      height:clamp(120px, 34vw, 156px);
-      flex:0 0 clamp(190px, 54vw, 250px);
+      width:clamp(195px, 56vw, 255px);
+      height:clamp(122px, 35vw, 160px);
+      flex:0 0 clamp(195px, 56vw, 255px);
     }
-    .md-gm-card__caption{ left:12px; right:12px; bottom:10px; }
-    .md-gm-card__caption strong{ font-size:15.5px; }
-    .md-gm-card__caption span{ font-size:8px; }
-    .md-gm-carousel__progress{ width:calc(100% - 32px); margin-top:4px; }
+    .md-gm-card__caption{ left:12px; right:12px; bottom:9px; gap:8px; }
+    .md-gm-card__caption strong{ font-size:14px; }
+    .md-gm-card__caption span{ font-size:8.5px; }
+    .md-gm-carousel__progress{ width:calc(100% - 32px); margin-top:2px; }
+    .md-gm-carousel__stack{ grid-template-columns:repeat(2, 1fr); gap:12px; }
+    .md-gm-carousel--stack{ padding:40px 16px; }
   }
 
 
