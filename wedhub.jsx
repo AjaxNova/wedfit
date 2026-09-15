@@ -977,38 +977,29 @@ function EnquiryModal({ item, onClose }) {
     const leafId = item.imageA?.split("/").pop()?.replace(/\.[a-zA-Z0-9]+$/, "") || "";
     const shellUrl = leafId ? `https://ajaxnova.github.io/wedfit/look/${leafId}/` : "";
 
-    const WA = {
-      wave: "\u{1F44B}",
-      calendar: "\u{1F4C5}",
-      clock: "\u{23F1}\u{FE0F}",
-      person: "\u{1F464}",
-      pin: "\u{1F4CD}",
-      thanks: "\u{1F64F}"
-    };
-
     const lines = [
-      `*MALABAR DARBAR* ${WA.wave}`,
+      `*MALABAR DARBAR* 👋`,
       `Wedding Attire Enquiry`,
       ``,
       `*LOOK*`,
       `${item.label}`,
       ``,
       `*BOOKING*`,
-      `${WA.calendar} From  · ${startLabel}`,
-      `${WA.calendar} Till  · ${endLabel}`,
-      `${WA.clock} Duration  · ${days} day${days > 1 ? "s" : ""}`,
+      `📅 From  · ${startLabel}`,
+      `📅 Till  · ${endLabel}`,
+      `⏱️ Duration  · ${days} day${days > 1 ? "s" : ""}`,
       ``,
       `*GUEST DETAILS*`,
-      `${WA.person} Name      · ${name.trim()}`,
-      `${WA.person} WhatsApp  · +91 ${digits}`,
-      `${WA.pin} Location   · ${place.trim()}`,
+      `👤 Name      · ${name.trim()}`,
+      `👤 WhatsApp  · +91 ${digits}`,
+      `📍 Location   · ${place.trim()}`,
       ``,
       `*NOTE*`,
       `${notes.trim() || "No additional note"}`,
       ...(shellUrl ? [``, `🔗 ${shellUrl}`] : []),
       ``,
       `Please confirm availability and fitting details.`,
-      `Thank you ${WA.thanks}`
+      `Thank you 🙏`
     ];
 
     const text = encodeURIComponent(lines.join("\n"));
