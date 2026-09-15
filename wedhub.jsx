@@ -38,7 +38,7 @@
  * ============================================================================
  */
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from "react";
 import { motion, useScroll, useTransform, useSpring } from "motion/react";
 import { CometCard } from "@/components/ui/comet-card";
 import {
@@ -222,6 +222,35 @@ function usePointerFine() {
 }
 
 /* ============================================================================
+ * hooks/useMediaQuery.js — generic breakpoint watcher (drives the groomsmen
+ * carousel's desktop-pin vs mobile-stack switch)
+ * ============================================================================ */
+function useMediaQuery(query) {
+  const [matches, setMatches] = useState(() =>
+    typeof window !== "undefined" ? window.matchMedia(query).matches : false
+  );
+  useEffect(() => {
+    const mq = window.matchMedia(query);
+    const update = () => setMatches(mq.matches);
+    update();
+    if (mq.addEventListener) mq.addEventListener("change", update);
+    else mq.addListener(update);
+    return () => {
+      if (mq.removeEventListener) mq.removeEventListener("change", update);
+      else mq.removeListener(update);
+    };
+  }, [query]);
+  return matches;
+}
+
+/* ============================================================================
+ * hooks/usePrefersReducedMotion.js
+ * ============================================================================ */
+function usePrefersReducedMotion() {
+  return useMediaQuery("(prefers-reduced-motion: reduce)");
+}
+
+/* ============================================================================
  * components/MagneticButton.jsx
  * ============================================================================ */
 function MagneticButton({ children, onClick, variant = "primary", ariaLabel, style, href }) {
@@ -377,7 +406,7 @@ function Hero() {
       el.setAttribute("webkit-playsinline", "true");
       const p = el.play();
       if (p !== undefined) {
-        p.catch(() => {});
+        p.catch(() => { });
       }
     }
     videoRef.current = el;
@@ -390,7 +419,7 @@ function Hero() {
       v.muted = true;
       const playPromise = v.play();
       if (playPromise !== undefined) {
-        playPromise.catch(() => {});
+        playPromise.catch(() => { });
       }
     }
   }, []);
@@ -621,19 +650,31 @@ function CollectionSection({ onEnquire }) {
 }
 
 /* ============================================================================
- * components/GroomsmenSection.jsx — editorial scroll parallax inspired by Aceternity
+ * components/GroomsmenSection.jsx — scroll carousel
+ * ----------------------------------------------------------------------------
+ * Swapped the old 3-row Aceternity parallax for a single-row scroll carousel:
+ *  - Desktop (>=900px, no reduced-motion): the section pins via CSS
+ *    `position: sticky` (no gsap/ScrollTrigger needed — motion/react is
+ *    already a project dependency and this avoids shipping a second
+ *    scroll-animation library) while an 8-card track translates horizontally,
+ *    driven by scrollYProgress + a spring, with a slim progress bar.
+ *  - Mobile / tablet (<900px): renders as a plain vertical stack that
+ *    fades/slides each card in on scroll-into-view. No scroll-jacking, no
+ *    pinned height, no reflow cost — this is the version most visitors on
+ *    phones will actually see, so it's the one kept cheapest.
+ *  - `prefers-reduced-motion: reduce`: falls back to the same static stack,
+ *    animation-free.
  * ============================================================================ */
-function GroomsmenProductCard({ product, translate, index, onEnquire }) {
+function GroomsmenCard({ product, index, onEnquire }) {
   return (
     <motion.div
-      style={{ x: translate }}
-      whileHover={{ y: -20 }}
+      whileHover={{ y: -10 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      className="md-gm-hero-card"
+      className="md-gm-card"
     >
       <button
         type="button"
-        className="md-gm-hero-card__link"
+        className="md-gm-card__link"
         onClick={() =>
           onEnquire?.({
             id: product.id,
@@ -646,8 +687,8 @@ function GroomsmenProductCard({ product, translate, index, onEnquire }) {
         }
       >
         <img src={product.thumbnail} alt={product.title} loading="lazy" decoding="async" />
-        <div className="md-gm-hero-card__overlay" />
-        <div className="md-gm-hero-card__caption">
+        <div className="md-gm-card__overlay" />
+        <div className="md-gm-card__caption">
           <span>{String(index + 1).padStart(2, "0")}</span>
           <strong>{product.title}</strong>
         </div>
@@ -656,110 +697,119 @@ function GroomsmenProductCard({ product, translate, index, onEnquire }) {
   );
 }
 
-function GroomsmenHeroParallax({ products, onEnquire }) {
-  const firstRow = products.slice(0, 3);
-  const secondRow = products.slice(3, 6);
-  const thirdRow = products.slice(6, 9);
-  const ref = useRef(null);
+function GroomsmenHeader() {
+  return (
+    <div className="md-gm-hero-header">
+      <div>
+        <p className="md-eyebrow">Standing With Him</p>
+        <h2 id="groomsmen-heading" className="md-gm-hero-title">The groomsmen's line-up</h2>
+        <p className="md-gm-hero-note">Coordinated looks for the whole party, moving together as one.</p>
+      </div>
+      <div className="md-gm-hero-mark" aria-hidden="true">
+        <span>MD</span>
+        <i />
+        <small>08 LOOKS</small>
+      </div>
+    </div>
+  );
+}
+
+/* Static, animation-free layout — used on mobile/tablet and whenever the
+ * visitor has prefers-reduced-motion set, so it's also the fallback that
+ * ships zero scroll-listener cost. */
+function GroomsmenStack({ products, onEnquire, animated }) {
+  return (
+    <section className="md-gm-carousel md-gm-carousel--stack" id="groomsmen" aria-labelledby="groomsmen-heading">
+      <GroomsmenHeader />
+      <div className="md-gm-carousel__stack">
+        {products.map((product, i) =>
+          animated ? (
+            <motion.div
+              key={product.id}
+              initial={{ opacity: 0, y: 36 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.3 }}
+              transition={{ duration: 0.5, ease: "easeOut", delay: (i % 2) * 0.06 }}
+            >
+              <GroomsmenCard product={product} index={i} onEnquire={onEnquire} />
+            </motion.div>
+          ) : (
+            <GroomsmenCard key={product.id} product={product} index={i} onEnquire={onEnquire} />
+          )
+        )}
+      </div>
+    </section>
+  );
+}
+
+/* Desktop pinned horizontal track. Pinning is done with `position: sticky`
+ * inside a tall wrapper (cheap, no library) — only the horizontal translate
+ * and the progress bar are driven by JS, via a single shared spring. */
+function GroomsmenPinnedTrack({ products, onEnquire }) {
+  const wrapRef = useRef(null);
+  const trackRef = useRef(null);
+  const [scrollDistance, setScrollDistance] = useState(0);
+
+  useLayoutEffect(() => {
+    const track = trackRef.current;
+    const wrap = wrapRef.current;
+    if (!track || !wrap) return;
+    const measure = () =>
+      setScrollDistance(Math.max(0, track.scrollWidth - wrap.offsetWidth));
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(track);
+    ro.observe(wrap);
+    return () => ro.disconnect();
+  }, [products.length]);
 
   const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start start", "end start"],
+    target: wrapRef,
+    offset: ["start start", "end end"],
   });
-
-  const springConfig = { stiffness: 300, damping: 30, bounce: 100 };
-  const translateX = useSpring(
-    useTransform(scrollYProgress, [0, 1], [0, 1000]),
-    springConfig
-  );
-  const translateXReverse = useSpring(
-    useTransform(scrollYProgress, [0, 1], [0, -1000]),
-    springConfig
-  );
-  const rotateX = useSpring(
-    useTransform(scrollYProgress, [0, 0.22], [9, 0]),
-    springConfig
-  );
-  const opacity = useSpring(
-    useTransform(scrollYProgress, [0, 0.22], [0.45, 1]),
-    springConfig
-  );
-  const rotateZ = useSpring(
-    useTransform(scrollYProgress, [0, 0.22], [7, 0]),
-    springConfig
-  );
-  const translateY = useSpring(
-    useTransform(scrollYProgress, [0, 0.22], [-40, 40]),
-    springConfig
-  );
+  const progress = useSpring(scrollYProgress, { stiffness: 260, damping: 34, mass: 0.3 });
+  const x = useTransform(progress, [0, 1], [0, -scrollDistance]);
 
   return (
-    <section ref={ref} className="md-gm-hero-parallax" id="groomsmen" aria-labelledby="groomsmen-heading">
-      <div className="md-gm-hero-header">
-        <div>
-          <p className="md-eyebrow">Standing With Him</p>
-          <h2 id="groomsmen-heading" className="md-gm-hero-title">The groomsmen's line-up</h2>
-          <p className="md-gm-hero-note">Coordinated looks for the whole party, moving together as one.</p>
-        </div>
-        <div className="md-gm-hero-mark" aria-hidden="true">
-          <span>MD</span>
-          <i />
-          <small>08 LOOKS</small>
+    <section
+      ref={wrapRef}
+      className="md-gm-carousel"
+      id="groomsmen"
+      aria-labelledby="groomsmen-heading"
+      style={{ height: `calc(100vh + ${scrollDistance}px)` }}
+    >
+      <div className="md-gm-carousel__sticky">
+        <GroomsmenHeader />
+        <motion.div ref={trackRef} className="md-gm-carousel__track" style={{ x }}>
+          {products.map((product, i) => (
+            <GroomsmenCard key={product.id} product={product} index={i} onEnquire={onEnquire} />
+          ))}
+        </motion.div>
+        <div className="md-gm-carousel__progress" aria-hidden="true">
+          <motion.div className="md-gm-carousel__progress-bar" style={{ scaleX: progress }} />
         </div>
       </div>
-
-      <motion.div
-        style={{ rotateX, rotateZ, translateY, opacity }}
-        className="md-gm-hero-stage"
-      >
-        <motion.div className="md-gm-hero-row md-gm-hero-row--reverse">
-          {firstRow.map((product, i) => (
-            <GroomsmenProductCard
-              product={product}
-              translate={translateX}
-              index={i}
-              onEnquire={onEnquire}
-              key={product.id}
-            />
-          ))}
-        </motion.div>
-
-        <motion.div className="md-gm-hero-row">
-          {secondRow.map((product, i) => (
-            <GroomsmenProductCard
-              product={product}
-              translate={translateXReverse}
-              index={i + 3}
-              onEnquire={onEnquire}
-              key={product.id}
-            />
-          ))}
-        </motion.div>
-
-        <motion.div className="md-gm-hero-row md-gm-hero-row--reverse">
-          {thirdRow.map((product, i) => (
-            <GroomsmenProductCard
-              product={product}
-              translate={translateX}
-              index={i + 6}
-              onEnquire={onEnquire}
-              key={product.id}
-            />
-          ))}
-        </motion.div>
-      </motion.div>
     </section>
   );
 }
 
 function GroomsmenSection({ onEnquire }) {
-  const products = GROOMSMEN_ITEMS.map((item, i) => ({
-    id: item.id,
-    title: `Groomsmen Look ${String(i + 1).padStart(2, "0")}`,
-    thumbnail: item.src,
-  }));
+  const products = useMemo(
+    () =>
+      GROOMSMEN_ITEMS.map((item, i) => ({
+        id: item.id,
+        title: `Groomsmen Look ${String(i + 1).padStart(2, "0")}`,
+        thumbnail: item.src,
+      })),
+    []
+  );
+  const isDesktop = useMediaQuery("(min-width: 900px)");
+  const reducedMotion = usePrefersReducedMotion();
 
-  return <GroomsmenHeroParallax products={products} onEnquire={onEnquire} />;
+  if (isDesktop && !reducedMotion) {
+    return <GroomsmenPinnedTrack products={products} onEnquire={onEnquire} />;
+  }
+  return <GroomsmenStack products={products} onEnquire={onEnquire} animated={!reducedMotion} />;
 }
 
 /* ============================================================================
@@ -1403,23 +1453,18 @@ const STYLES = `
 
   .md-photo__caption{ margin-top:10px; font-size:12.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--ink); opacity:0.55; font-weight:600; }
 
-  /* Groomsmen — the actual Aceternity Hero Parallax motion model,
-     adapted only in typography, color and card treatment for Malabar Darbar. */
-  .md-gm-hero-parallax{
+  /* Groomsmen — scroll carousel. Desktop pins via position:sticky (no
+     scroll-jacking library) while an 8-card track translates horizontally;
+     mobile/tablet and prefers-reduced-motion get a plain vertical stack. */
+  .md-gm-carousel{
     position:relative;
-    min-height:190vh;
-    padding:32px 0 40px;
-    overflow:hidden;
-    will-change:transform;
     background:
       radial-gradient(900px 520px at 50% 10%, rgba(142,27,34,.13), transparent 62%),
       var(--sand);
     color:var(--ink);
-    perspective:1000px;
-    transform-style:preserve-3d;
     isolation:isolate;
   }
-  .md-gm-hero-parallax::before{
+  .md-gm-carousel::before{
     content:"";
     position:absolute;
     inset:0;
@@ -1471,48 +1516,56 @@ const STYLES = `
   }
   .md-gm-hero-mark i{ width:46px; height:1px; background:var(--gold-bright); }
   .md-gm-hero-mark small{ font-size:10px; font-weight:800; letter-spacing:.16em; }
-  .md-gm-hero-stage{
+
+  /* --- Desktop pinned track --- */
+  .md-gm-carousel__sticky{
+    position:sticky;
+    top:0;
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    gap:28px;
+    padding:32px 0;
+    overflow:hidden;
+  }
+  .md-gm-carousel__track{
     position:relative;
     z-index:2;
-    transform-style:preserve-3d;
-    will-change:transform,opacity;
-    width:100%;
-  }
-  .md-gm-hero-stage::after{
-    content:"";
-    position:absolute;
-    inset:0;
-    pointer-events:none;
-    z-index:10;
-    background:linear-gradient(90deg,var(--sand) 0%,transparent 5%,transparent 95%,var(--sand) 100%);
-    opacity:.45;
-  }
-  .md-gm-hero-row{
     display:flex;
     flex-direction:row;
     gap:22px;
-    margin-bottom:22px;
     width:max-content;
     padding-left:max(20px,calc((100vw - 1180px)/2));
     will-change:transform;
   }
-  .md-gm-hero-row--reverse{
-    flex-direction:row-reverse;
-    padding-left:0;
-    padding-right:max(20px,calc((100vw - 1180px)/2));
+  .md-gm-carousel__progress{
+    position:relative;
+    z-index:4;
+    width:min(1180px,calc(100% - 40px));
+    margin:0 auto;
+    height:2px;
+    background:var(--line);
+    overflow:hidden;
   }
-  .md-gm-hero-card{
+  .md-gm-carousel__progress-bar{
+    height:100%;
+    width:100%;
+    transform-origin:left center;
+    background:var(--gold-bright);
+  }
+
+  /* --- Card, shared by pinned track + mobile stack --- */
+  .md-gm-card{
     position:relative;
     width:min(520px, 42vw);
     height:min(325px, 26.25vw);
     min-width:360px;
     min-height:225px;
     flex:0 0 min(520px, 42vw);
-    overflow:visible;
-    transform-style:preserve-3d;
     will-change:transform;
   }
-  .md-gm-hero-card__link{
+  .md-gm-card__link{
     position:relative;
     display:block;
     width:100%;
@@ -1524,9 +1577,9 @@ const STYLES = `
     border:1px solid var(--line);
     box-shadow:0 28px 55px -30px rgba(74,19,26,.55);
   }
-  /* button.md-gm-hero-card__link UA-style reset, since the card is now a <button> */
-  button.md-gm-hero-card__link{ font:inherit; padding:0; margin:0; color:inherit; text-align:left; -webkit-appearance:none; appearance:none; cursor:pointer; }
-  .md-gm-hero-card__link::before{
+  /* button.md-gm-card__link UA-style reset, since the card is a <button> */
+  button.md-gm-card__link{ font:inherit; padding:0; margin:0; color:inherit; text-align:left; -webkit-appearance:none; appearance:none; cursor:pointer; }
+  .md-gm-card__link::before{
     content:"";
     position:absolute;
     z-index:2;
@@ -1534,7 +1587,7 @@ const STYLES = `
     border:1px solid rgba(255,255,255,.1);
     pointer-events:none;
   }
-  .md-gm-hero-card img{
+  .md-gm-card img{
     position:absolute;
     inset:-1.5%;
     width:103%;
@@ -1545,15 +1598,15 @@ const STYLES = `
     transform:scale(1.005);
     transition:transform .8s cubic-bezier(.2,.7,.3,1),filter .6s ease;
   }
-  .md-gm-hero-card:hover img{ transform:scale(1.075); filter:saturate(1.08) contrast(1.03); }
-  .md-gm-hero-card__overlay{
+  .md-gm-card:hover img{ transform:scale(1.075); filter:saturate(1.08) contrast(1.03); }
+  .md-gm-card__overlay{
     position:absolute;
     z-index:1;
     inset:0;
     pointer-events:none;
     background:linear-gradient(180deg,rgba(10,7,6,.02) 38%,rgba(10,7,6,.78) 100%);
   }
-  .md-gm-hero-card__caption{
+  .md-gm-card__caption{
     position:absolute;
     z-index:3;
     left:20px;
@@ -1565,38 +1618,43 @@ const STYLES = `
     gap:18px;
     color:#F8ECEA;
   }
-  .md-gm-hero-card__caption span{
+  .md-gm-card__caption span{
     font:700 10px/1 'Archivo',sans-serif;
     letter-spacing:.15em;
     opacity:.65;
   }
-  .md-gm-hero-card__caption strong{
+  .md-gm-card__caption strong{
     font:600 25px/1 'Cormorant Garamond',Georgia,serif;
     letter-spacing:-.01em;
   }
+
+  /* --- Mobile / tablet + reduced-motion: plain vertical stack --- */
+  .md-gm-carousel--stack{ padding:32px 0 40px; }
+  .md-gm-carousel__stack{
+    position:relative;
+    z-index:2;
+    width:min(1180px,calc(100% - 40px));
+    margin:0 auto;
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+  }
+  .md-gm-carousel--stack .md-gm-card{
+    width:100%;
+    height:auto;
+    aspect-ratio:16/10;
+    min-width:0;
+    min-height:0;
+    flex:none;
+  }
+
   @media (max-width:760px){
-    .md-gm-hero-parallax{ min-height:165vh; padding:24px 0 24px; }
     .md-gm-hero-header{ width:calc(100% - 32px); padding-bottom:18px; }
     .md-gm-hero-mark{ display:none; }
     .md-gm-hero-title{ font-size:clamp(44px,12vw,62px); }
-    .md-gm-hero-row{ gap:12px; margin-bottom:12px; padding-left:16px; }
-    .md-gm-hero-row--reverse{ padding-right:16px; }
-    .md-gm-hero-card{
-      width:78vw;
-      height:49vw;
-      min-width:280px;
-      min-height:176px;
-      flex-basis:78vw;
-    }
-    .md-gm-hero-card__caption{ left:16px; right:16px; bottom:14px; }
-    .md-gm-hero-card__caption strong{ font-size:21px; }
-  }
-  @media (prefers-reduced-motion:reduce){
-    .md-gm-hero-parallax{ min-height:auto; padding-bottom:70px; }
-    .md-gm-hero-stage{ transform:none !important; opacity:1 !important; }
-    .md-gm-hero-row{ flex-wrap:wrap; width:auto; padding:0 20px; }
-    .md-gm-hero-row--reverse{ flex-direction:row; padding:0 20px; }
-    .md-gm-hero-card{ flex:1 1 220px; width:auto; height:auto; aspect-ratio:3/4; }
+    .md-gm-carousel__stack{ width:calc(100% - 32px); gap:14px; }
+    .md-gm-card__caption{ left:16px; right:16px; bottom:14px; }
+    .md-gm-card__caption strong{ font-size:21px; }
   }
 
 
