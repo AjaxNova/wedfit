@@ -406,7 +406,7 @@ function Hero() {
       el.setAttribute("webkit-playsinline", "true");
       const p = el.play();
       if (p !== undefined) {
-        p.catch(() => {});
+        p.catch(() => { });
       }
     }
     videoRef.current = el;
@@ -419,7 +419,7 @@ function Hero() {
       v.muted = true;
       const playPromise = v.play();
       if (playPromise !== undefined) {
-        playPromise.catch(() => {});
+        playPromise.catch(() => { });
       }
     }
   }, []);
@@ -818,11 +818,12 @@ function GroomsmenSection({ onEnquire }) {
     []
   );
   const reducedMotion = usePrefersReducedMotion();
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
 
-  if (!reducedMotion) {
+  if (isDesktop && !reducedMotion) {
     return <GroomsmenPinnedTrack products={products} onEnquire={onEnquire} />;
   }
-  return <GroomsmenStack products={products} onEnquire={onEnquire} animated={false} />;
+  return <GroomsmenStack products={products} onEnquire={onEnquire} animated={!reducedMotion} />;
 }
 
 /* ============================================================================
@@ -1486,9 +1487,9 @@ const STYLES = `
   .md-gm-hero-header{
     position:relative;
     z-index:4;
-    width:min(1180px,calc(100% - 48px));
-    margin:0 auto;
-    padding:0 0 clamp(4px, 1.2vh, 12px);
+    width:100%;
+    box-sizing:border-box;
+    padding:0 clamp(20px, 6vw, 80px) clamp(4px, 1.2vh, 12px);
     display:flex;
     justify-content:space-between;
     align-items:flex-end;
@@ -1537,8 +1538,8 @@ const STYLES = `
     display:flex;
     flex-direction:column;
     justify-content:center;
-    gap:clamp(8px, 1.5vh, 16px);
-    padding:clamp(12px, 2.5vh, 28px) 0;
+    gap:clamp(8px, 1.6vh, 18px);
+    padding:clamp(28px, 5vh, 56px) 0 clamp(16px, 3vh, 32px);
     overflow:hidden;
     box-sizing:border-box;
   }
@@ -1556,17 +1557,17 @@ const STYLES = `
     flex-direction:row;
     gap:clamp(12px, 1.4vw, 18px);
     width:max-content;
-    padding-left:max(24px, calc((100vw - 1180px)/2));
-    padding-right:max(24px, calc((100vw - 1180px)/2));
+    padding-left:clamp(20px, 6vw, 80px);
+    padding-right:clamp(20px, 6vw, 80px);
     will-change:transform;
   }
   .md-gm-carousel__track--rev{
-    padding-left:max(24px, calc((100vw - 1180px)/2));
+    padding-left:clamp(20px, 6vw, 80px);
   }
   .md-gm-carousel__progress{
     position:relative;
     z-index:4;
-    width:min(1180px, calc(100% - 48px));
+    width:calc(100% - 2 * clamp(20px, 6vw, 80px));
     margin:clamp(4px, 1vh, 8px) auto 0;
     height:2px;
     background:var(--line);
@@ -1583,9 +1584,10 @@ const STYLES = `
   /* --- Card Sizing for 2 Rows --- */
   .md-gm-card{
     position:relative;
-    width:clamp(230px, 22vw, 340px);
-    height:clamp(135px, 13.5vw, 195px);
-    flex:0 0 clamp(230px, 22vw, 340px);
+    height:clamp(230px, 31vh, 380px);
+    aspect-ratio:16/10;
+    width:auto;
+    flex:0 0 auto;
     will-change:transform;
   }
   .md-gm-card__link{
