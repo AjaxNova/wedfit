@@ -742,23 +742,27 @@ function GroomsmenStack({ products, onEnquire, animated }) {
   );
 }
 
-/* Desktop pinned horizontal track. Pinning is done with `position: sticky`
- * inside a tall wrapper (cheap, no library) — only the horizontal translate
- * and the progress bar are driven by JS, via a single shared spring. */
+/* Desktop & Mobile pinned 2-row runway scroll carousel. Pinning is done with `position: sticky`
+ * inside a tall wrapper while 2 rows of 4 cards translate horizontally in counter-directions. */
 function GroomsmenPinnedTrack({ products, onEnquire }) {
   const wrapRef = useRef(null);
-  const trackRef = useRef(null);
+  const row1Ref = useRef(null);
   const [scrollDistance, setScrollDistance] = useState(0);
 
+  const row1 = useMemo(() => products.slice(0, 4), [products]);
+  const row2 = useMemo(() => products.slice(4, 8), [products]);
+
   useLayoutEffect(() => {
-    const track = trackRef.current;
+    const row = row1Ref.current;
     const wrap = wrapRef.current;
-    if (!track || !wrap) return;
-    const measure = () =>
-      setScrollDistance(Math.max(0, track.scrollWidth - wrap.offsetWidth));
+    if (!row || !wrap) return;
+    const measure = () => {
+      const dist = Math.max(0, row.scrollWidth - wrap.offsetWidth + 60);
+      setScrollDistance(dist);
+    };
     measure();
     const ro = new ResizeObserver(measure);
-    ro.observe(track);
+    ro.observe(row);
     ro.observe(wrap);
     return () => ro.disconnect();
   }, [products.length]);
@@ -767,8 +771,9 @@ function GroomsmenPinnedTrack({ products, onEnquire }) {
     target: wrapRef,
     offset: ["start start", "end end"],
   });
-  const progress = useSpring(scrollYProgress, { stiffness: 260, damping: 34, mass: 0.3 });
-  const x = useTransform(progress, [0, 1], [0, -scrollDistance]);
+  const progress = useSpring(scrollYProgress, { stiffness: 240, damping: 32, mass: 0.3 });
+  const x1 = useTransform(progress, [0, 1], [0, -scrollDistance]);
+  const x2 = useTransform(progress, [0, 1], [-scrollDistance, 0]);
 
   return (
     <section
@@ -776,15 +781,22 @@ function GroomsmenPinnedTrack({ products, onEnquire }) {
       className="md-gm-carousel"
       id="groomsmen"
       aria-labelledby="groomsmen-heading"
-      style={{ height: `calc(100vh + ${scrollDistance}px)` }}
+      style={{ height: `calc(100vh + ${Math.max(scrollDistance * 1.3, 750)}px)` }}
     >
       <div className="md-gm-carousel__sticky">
         <GroomsmenHeader />
-        <motion.div ref={trackRef} className="md-gm-carousel__track" style={{ x }}>
-          {products.map((product, i) => (
-            <GroomsmenCard key={product.id} product={product} index={i} onEnquire={onEnquire} />
-          ))}
-        </motion.div>
+        <div className="md-gm-carousel__stage">
+          <motion.div ref={row1Ref} className="md-gm-carousel__track" style={{ x: x1 }}>
+            {row1.map((product, i) => (
+              <GroomsmenCard key={product.id} product={product} index={i} onEnquire={onEnquire} />
+            ))}
+          </motion.div>
+          <motion.div className="md-gm-carousel__track md-gm-carousel__track--rev" style={{ x: x2 }}>
+            {row2.map((product, i) => (
+              <GroomsmenCard key={product.id} product={product} index={i + 4} onEnquire={onEnquire} />
+            ))}
+          </motion.div>
+        </div>
         <div className="md-gm-carousel__progress" aria-hidden="true">
           <motion.div className="md-gm-carousel__progress-bar" style={{ scaleX: progress }} />
         </div>
@@ -803,13 +815,12 @@ function GroomsmenSection({ onEnquire }) {
       })),
     []
   );
-  const isDesktop = useMediaQuery("(min-width: 900px)");
   const reducedMotion = usePrefersReducedMotion();
 
-  if (isDesktop && !reducedMotion) {
+  if (!reducedMotion) {
     return <GroomsmenPinnedTrack products={products} onEnquire={onEnquire} />;
   }
-  return <GroomsmenStack products={products} onEnquire={onEnquire} animated={!reducedMotion} />;
+  return <GroomsmenStack products={products} onEnquire={onEnquire} animated={false} />;
 }
 
 /* ============================================================================
@@ -1517,36 +1528,50 @@ const STYLES = `
   .md-gm-hero-mark i{ width:46px; height:1px; background:var(--gold-bright); }
   .md-gm-hero-mark small{ font-size:10px; font-weight:800; letter-spacing:.16em; }
 
-  /* --- Desktop pinned track --- */
+  /* --- 2-Row Pinned Scroll Runway Carousel --- */
   .md-gm-carousel__sticky{
     position:sticky;
     top:0;
     height:100vh;
+    height:100svh;
     display:flex;
     flex-direction:column;
     justify-content:center;
-    gap:28px;
-    padding:32px 0;
+    gap:18px;
+    padding:20px 0;
     overflow:hidden;
+    box-sizing:border-box;
   }
-  .md-gm-carousel__track{
+  .md-gm-carousel__stage{
     position:relative;
     z-index:2;
     display:flex;
+    flex-direction:column;
+    gap:16px;
+    width:100%;
+    overflow:visible;
+  }
+  .md-gm-carousel__track{
+    display:flex;
     flex-direction:row;
-    gap:22px;
+    gap:18px;
     width:max-content;
-    padding-left:max(20px,calc((100vw - 1180px)/2));
+    padding-left:max(20px, calc((100vw - 1180px)/2));
+    padding-right:max(20px, calc((100vw - 1180px)/2));
     will-change:transform;
+  }
+  .md-gm-carousel__track--rev{
+    padding-left:max(20px, calc((100vw - 1180px)/2));
   }
   .md-gm-carousel__progress{
     position:relative;
     z-index:4;
-    width:min(1180px,calc(100% - 40px));
-    margin:0 auto;
+    width:min(1180px, calc(100% - 40px));
+    margin:6px auto 0;
     height:2px;
     background:var(--line);
     overflow:hidden;
+    border-radius:2px;
   }
   .md-gm-carousel__progress-bar{
     height:100%;
@@ -1555,14 +1580,12 @@ const STYLES = `
     background:var(--gold-bright);
   }
 
-  /* --- Card, shared by pinned track + mobile stack --- */
+  /* --- Card Sizing for 2 Rows --- */
   .md-gm-card{
     position:relative;
-    width:min(520px, 42vw);
-    height:min(325px, 26.25vw);
-    min-width:360px;
-    min-height:225px;
-    flex:0 0 min(520px, 42vw);
+    width:clamp(280px, 30vw, 400px);
+    height:clamp(165px, 18vw, 235px);
+    flex:0 0 clamp(280px, 30vw, 400px);
     will-change:transform;
   }
   .md-gm-card__link{
@@ -1571,11 +1594,11 @@ const STYLES = `
     width:100%;
     height:100%;
     overflow:hidden;
-    border-radius:2px;
+    border-radius:6px;
     text-decoration:none;
     background:var(--bg-raised);
     border:1px solid var(--line);
-    box-shadow:0 28px 55px -30px rgba(74,19,26,.55);
+    box-shadow:0 16px 36px -18px rgba(74,19,26,.45);
   }
   /* button.md-gm-card__link UA-style reset, since the card is a <button> */
   button.md-gm-card__link{ font:inherit; padding:0; margin:0; color:inherit; text-align:left; -webkit-appearance:none; appearance:none; cursor:pointer; }
@@ -1609,52 +1632,44 @@ const STYLES = `
   .md-gm-card__caption{
     position:absolute;
     z-index:3;
-    left:20px;
-    right:20px;
-    bottom:18px;
+    left:16px;
+    right:16px;
+    bottom:14px;
     display:flex;
     align-items:flex-end;
     justify-content:space-between;
-    gap:18px;
+    gap:12px;
     color:#F8ECEA;
   }
   .md-gm-card__caption span{
-    font:700 10px/1 'Archivo',sans-serif;
+    font:700 9.5px/1 'Archivo',sans-serif;
     letter-spacing:.15em;
     opacity:.65;
   }
   .md-gm-card__caption strong{
-    font:600 25px/1 'Cormorant Garamond',Georgia,serif;
+    font:600 20px/1 'Cormorant Garamond',Georgia,serif;
     letter-spacing:-.01em;
   }
 
-  /* --- Mobile / tablet + reduced-motion: plain vertical stack --- */
-  .md-gm-carousel--stack{ padding:32px 0 40px; }
-  .md-gm-carousel__stack{
-    position:relative;
-    z-index:2;
-    width:min(1180px,calc(100% - 40px));
-    margin:0 auto;
-    display:flex;
-    flex-direction:column;
-    gap:18px;
-  }
-  .md-gm-carousel--stack .md-gm-card{
-    width:100%;
-    height:auto;
-    aspect-ratio:16/10;
-    min-width:0;
-    min-height:0;
-    flex:none;
-  }
-
+  /* --- Mobile / Small Screens --- */
   @media (max-width:760px){
-    .md-gm-hero-header{ width:calc(100% - 32px); padding-bottom:18px; }
+    .md-gm-carousel__sticky{ gap:12px; padding:14px 0; }
+    .md-gm-hero-header{ width:calc(100% - 32px); padding-bottom:8px; }
     .md-gm-hero-mark{ display:none; }
-    .md-gm-hero-title{ font-size:clamp(44px,12vw,62px); }
-    .md-gm-carousel__stack{ width:calc(100% - 32px); gap:14px; }
-    .md-gm-card__caption{ left:16px; right:16px; bottom:14px; }
-    .md-gm-card__caption strong{ font-size:21px; }
+    .md-gm-hero-title{ font-size:clamp(30px, 8vw, 42px); }
+    .md-gm-hero-note{ font-size:12.5px; line-height:1.4; }
+    .md-gm-carousel__stage{ gap:10px; }
+    .md-gm-carousel__track{ gap:12px; padding-left:16px; padding-right:16px; }
+    .md-gm-carousel__track--rev{ padding-left:16px; padding-right:16px; }
+    .md-gm-card{
+      width:clamp(190px, 54vw, 250px);
+      height:clamp(120px, 34vw, 156px);
+      flex:0 0 clamp(190px, 54vw, 250px);
+    }
+    .md-gm-card__caption{ left:12px; right:12px; bottom:10px; }
+    .md-gm-card__caption strong{ font-size:15.5px; }
+    .md-gm-card__caption span{ font-size:8px; }
+    .md-gm-carousel__progress{ width:calc(100% - 32px); margin-top:4px; }
   }
 
 
