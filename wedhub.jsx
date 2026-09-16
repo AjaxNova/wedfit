@@ -1317,7 +1317,7 @@ const STYLES = `
   .md-nav__icon:hover{ border-color:var(--gold-bright); transform:scale(1.08) rotate(-6deg); color:#F8ECEA; }
   .md-nav__icon:hover::before{ transform:scale(1); }
   .md-nav__burger{ display:none; align-items:center; justify-content:center; width:34px; height:34px; background:none; border:1px solid var(--line); cursor:pointer; }
-  @media (max-width:760px){
+  @media (max-width:900px){
     .md-nav__links,.md-nav__contact{ display:none; }
     .md-nav__burger{ display:flex; }
   }
