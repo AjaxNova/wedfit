@@ -1876,12 +1876,30 @@ const STYLES = `
     }
     .md-enquiry-context__caption{
       grid-column:2; grid-row:1; align-self:end;
-      width:auto; font-size:17px;
+      width:auto;
+      font-family:'Archivo',sans-serif;
+      font-size:15px; font-weight:600; letter-spacing:-.01em;
     }
     .md-enquiry-context__note{
       grid-column:2; grid-row:2; align-self:start;
       width:auto; font-size:12px; line-height:1.5;
     }
+  }
+
+  @media (max-width:899px) and (max-height:420px){
+    .md-enquiry-context{
+      grid-template-columns:56px 1fr;
+      padding:calc(50px + env(safe-area-inset-top)) 16px 10px;
+      column-gap:10px; row-gap:2px;
+    }
+    .md-enquiry-context__frame{ width:56px; height:70px; }
+    .md-enquiry-context__caption{ font-size:13px; }
+    .md-enquiry-context__note{
+      font-size:11px; overflow:hidden;
+      display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical;
+    }
+    .md-enquiry-title{ margin:0 0 12px; font-size:22px; }
+    .md-enquiry-form{ padding-top:12px; }
   }
 
   @media (min-width:900px){
