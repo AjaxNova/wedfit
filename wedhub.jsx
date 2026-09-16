@@ -1878,6 +1878,22 @@ const STYLES = `
     .md-enquiry-submit{ width:auto; align-self:flex-start; }
   }
 
+  @media (max-height:500px) and (orientation:landscape){
+    .md-enquiry-backdrop{ padding:16px; align-items:center; }
+    .md-enquiry-modal{
+      max-width:900px; width:100%; height:auto; max-height:92vh;
+      grid-template-columns:1fr 1fr; grid-template-rows:1fr;
+      align-items:stretch;
+      overflow-y:hidden;
+    }
+    .md-enquiry-context{ order:2; padding:16px; justify-content:center; min-height:0; gap:8px; }
+    .md-enquiry-context__frame{ width:min(70%, 220px) !important; align-self:center; }
+    .md-enquiry-context__caption,
+    .md-enquiry-context__note{ width:min(70%, 220px) !important; align-self:center; }
+    .md-enquiry-form{ order:1; padding:16px; overflow-y:auto; overscroll-behavior:contain; min-height:0; }
+    .md-enquiry-submit{ width:auto; align-self:flex-start; }
+  }
+
   @media (prefers-reduced-motion:reduce){
     .md-enquiry-backdrop,
     .md-enquiry-modal{ animation:none !important; }
