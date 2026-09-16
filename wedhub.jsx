@@ -1858,10 +1858,30 @@ const STYLES = `
   .md-enquiry-submit{ width:100%; margin-top:4px; justify-content:center; }
 
   @media (max-width:899px){
-    .md-enquiry-context{ padding-left:20px; padding-right:20px; padding-top:calc(20px + env(safe-area-inset-top)); gap:10px; }
-    .md-enquiry-context__frame{ width:min(84%, 300px); align-self:center; aspect-ratio:4/5 !important; }
-    .md-enquiry-context__caption,
-    .md-enquiry-context__note{ width:min(84%, 300px); align-self:center; }
+    .md-enquiry-context{
+      display:grid;
+      grid-template-columns:76px 1fr;
+      grid-template-rows:auto auto;
+      column-gap:14px;
+      row-gap:4px;
+      align-items:center;
+      padding:calc(58px + env(safe-area-inset-top)) 20px 16px;
+    }
+    .md-enquiry-context__frame{
+      grid-column:1;
+      grid-row:1 / span 2;
+      width:76px;
+      height:96px;
+      aspect-ratio:auto !important;
+    }
+    .md-enquiry-context__caption{
+      grid-column:2; grid-row:1; align-self:end;
+      width:auto; font-size:17px;
+    }
+    .md-enquiry-context__note{
+      grid-column:2; grid-row:2; align-self:start;
+      width:auto; font-size:12px; line-height:1.5;
+    }
   }
 
   @media (min-width:900px){
@@ -1878,21 +1898,6 @@ const STYLES = `
     .md-enquiry-submit{ width:auto; align-self:flex-start; }
   }
 
-  @media (max-height:500px) and (orientation:landscape){
-    .md-enquiry-backdrop{ padding:16px; align-items:center; }
-    .md-enquiry-modal{
-      max-width:900px; width:100%; height:auto; max-height:92vh;
-      grid-template-columns:1fr 1fr; grid-template-rows:1fr;
-      align-items:stretch;
-      overflow-y:hidden;
-    }
-    .md-enquiry-context{ order:2; padding:16px; justify-content:center; min-height:0; gap:8px; }
-    .md-enquiry-context__frame{ width:min(70%, 220px) !important; align-self:center; }
-    .md-enquiry-context__caption,
-    .md-enquiry-context__note{ width:min(70%, 220px) !important; align-self:center; }
-    .md-enquiry-form{ order:1; padding:16px; overflow-y:auto; overscroll-behavior:contain; min-height:0; }
-    .md-enquiry-submit{ width:auto; align-self:flex-start; }
-  }
 
   @media (prefers-reduced-motion:reduce){
     .md-enquiry-backdrop,
