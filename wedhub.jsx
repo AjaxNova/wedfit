@@ -967,7 +967,14 @@ function EnquiryModal({ item, onClose }) {
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
-    const focusFrame = requestAnimationFrame(() => nameRef.current?.focus());
+    const focusFrame = requestAnimationFrame(() => {
+      const hasFinePointer = window.matchMedia("(pointer: fine)").matches;
+      if (hasFinePointer) {
+        nameRef.current?.focus();
+      } else {
+        modalRef.current?.focus();
+      }
+    });
 
     const handleKeyDown = (e) => {
       if (e.key === "Escape") {
@@ -1080,6 +1087,7 @@ function EnquiryModal({ item, onClose }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="md-enquiry-title"
+        tabIndex={-1}
       >
         <button type="button" className="md-enquiry-close" onClick={onClose} aria-label="Close enquiry form">
           <X size={20} strokeWidth={1.8} />
@@ -1358,13 +1366,19 @@ const STYLES = `
   .md-hero__link{ font-size:14.5px; color:#F8ECEA; text-decoration:none; border-bottom:1px solid var(--gold-bright); padding-bottom:2px; opacity:0.9; }
   .md-hero__link:hover{ opacity:1; color:var(--gold-bright); }
   @media (max-width:640px){ .md-hero__content{ padding-bottom:64px; } }
+  @media (max-height:500px) and (orientation:landscape){
+    .md-hero{ min-height:auto; height:auto; padding-top:96px; padding-bottom:32px; }
+    .md-hero__content{ padding-bottom:24px; }
+    .md-hero__title{ font-size:clamp(28px, 6vh, 44px); }
+    .md-hero__sub{ margin:14px 0 18px; font-size:15px; }
+  }
 
   /* jali divider */
   .md-jali{ position:relative; color:var(--gold); background:linear-gradient(180deg, var(--bg-raised-2), var(--bg)); height:24px; box-shadow:0 0 24px -4px rgba(225,73,83,0.35); }
   .md-jali svg{ width:100%; height:100%; display:block; }
 
   /* sections */
-  .md-section{ padding:64px clamp(20px,6vw,80px) 44px; }
+  .md-section{ padding:56px clamp(20px,6vw,80px) 40px; }
   .md-section--sand{ background:var(--sand); }
   .md-section__head{ display:flex; justify-content:space-between; gap:40px; flex-wrap:wrap; margin-bottom:34px; align-items:flex-end; }
   .md-eyebrow{ font-size:13px; letter-spacing:0.08em; text-transform:uppercase; color:var(--gold-bright); margin:0 0 8px; font-weight:600; }
@@ -1387,7 +1401,7 @@ const STYLES = `
   .md-photo{ margin:0; cursor:pointer; perspective:1000px; min-width:0; }
   .md-photo__frame{
     position:relative;
-    aspect-ratio:3/4;
+    aspect-ratio:4/5;
     overflow:hidden;
     border-radius:18px;
     border:1px solid var(--line);
@@ -1584,7 +1598,7 @@ const STYLES = `
   /* --- Card Sizing for 2 Rows --- */
   .md-gm-card{
     position:relative;
-    height:clamp(230px, 31vh, 380px);
+    height:clamp(245px, 33vh, 400px);
     aspect-ratio:16/10;
     width:auto;
     flex:0 0 auto;
